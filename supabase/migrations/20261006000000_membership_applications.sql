@@ -79,11 +79,16 @@ create policy "Admins can review applications"
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
 
--- Admins may only change review fields; everything the applicant submitted
--- stays as submitted.
-revoke update on public.membership_applications from authenticated;
+-- Explicit grants rather than relying on the project's default privileges.
+-- Anonymous visitors get nothing; the server writes applications with the
+-- service role. Admins may only change review fields, so everything the
+-- applicant submitted stays as submitted.
+revoke all on public.admins, public.membership_applications from anon, authenticated;
+grant select on public.admins to authenticated;
+grant select on public.membership_applications to authenticated;
 grant update (status, reviewed_by, reviewed_at, review_note)
   on public.membership_applications to authenticated;
+grant all on public.admins, public.membership_applications to service_role;
 
 -- Private bucket for photos and supporting documents.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
